@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="description" content="SplitMate Campus - Sleek, modern, offline-capable Student Budget & Expense Splitter Progressive Web App.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SplitMate">
+
+  <title>SplitMate Campus | Student Expense Splitter & Budget</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Favicon / App Icon (inline SVG data URI) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230F172A'/%3E%3Cpath d='M30 35 C30 28, 70 28, 70 35 C70 42, 40 45, 40 55 C40 65, 70 68, 70 75 C70 82, 30 82, 30 75' fill='none' stroke='%2310B981' stroke-width='7' stroke-linecap='round'/%3E%3Cline x1='50' y1='20' x2='50' y2='90' stroke='%2310B981' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230F172A'/%3E%3Cpath d='M30 35 C30 28, 70 28, 70 35 C70 42, 40 45, 40 55 C40 65, 70 68, 70 75 C70 82, 30 82, 30 75' fill='none' stroke='%2310B981' stroke-width='7' stroke-linecap='round'/%3E%3Cline x1='50' y1='20' x2='50' y2='90' stroke='%2310B981' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E">
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- App Container -->
+  <div class="app-layout">
+    
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+      <div class="nav-container">
+        
+        <!-- Brand Logo & Identity -->
+        <div class="brand-wrapper">
+          <div class="brand-icon">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">SplitMate</span>
+            <span class="brand-badge">Campus</span>
+          </div>
+        </div>
+
+        <!-- Group Selector & Switcher -->
+        <div class="group-selector-box">
+          <i class="fa-solid fa-users-rectangle group-icon"></i>
+          <select id="activeGroupSelect" class="group-dropdown" aria-label="Select Active Group">
+            <!-- Dynamically populated from JS -->
+          </select>
+          <button id="btnNewGroupModal" class="btn-icon" title="Create New Group" aria-label="Create New Group">
+            <i class="fa-solid fa-folder-plus"></i>
+          </button>
+        </div>
+
+        <!-- Top Actions -->
+        <div class="nav-actions">
+          <!-- Connection / Offline Badge -->
+          <div id="offlineBadge" class="connection-pill online" title="Status: Online">
+            <span class="status-dot"></span>
+            <span class="status-label">Online</span>
+          </div>
+
+          <!-- Export CSV Button -->
+          <button id="btnExportCsv" class="btn btn-outline" title="Export this group's expenses to CSV">
+            <i class="fa-solid fa-file-arrow-down"></i>
+            <span class="btn-text">Export CSV</span>
+          </button>
+
+          <!-- Primary + Add Expense Button -->
+          <button id="btnOpenAddExpenseModal" class="btn btn-primary" title="Add a new group expense">
+            <i class="fa-solid fa-plus"></i>
+            <span class="btn-text">Add Expense</span>
+          </button>
+
+          <!-- Demo Reset Quick Action -->
+          <button id="btnResetDemoData" class="btn-icon" title="Reset to Sample Student Data" aria-label="Reset to Sample Student Data">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="main-content">
+      <div class="content-container">
+
+        <!-- Active Group Overview & Member Avatars Banner -->
+        <section class="group-hero-card">
+          <div class="hero-left">
+            <div class="group-meta">
+              <span class="meta-tag"><i class="fa-solid fa-graduation-cap"></i> Student Living</span>
+              <h1 id="currentGroupTitle" class="group-title">Hostel Room 204</h1>
+              <p id="currentGroupDesc" class="group-description">Shared living, canteen dinners, cabs & campus bills</p>
+            </div>
+            <div class="members-chip-list" id="groupMembersList">
+              <!-- Dynamically populated member avatar chips -->
+            </div>
+          </div>
+          <div class="hero-right">
+            <div class="net-balance-pill" id="userNetBalancePill">
+              <span class="pill-label">Your Net Balance</span>
+              <span class="pill-value" id="userNetBalanceValue">₹0.00</span>
+              <span class="pill-subtitle" id="userNetBalanceSub">All settled up</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3 Summary Metric Cards -->
+        <section class="metrics-grid">
+          
+          <!-- Card 1: Total Group Spend -->
+          <div class="metric-card card-total">
+            <div class="metric-header">
+              <span class="metric-title">Total Group Spend</span>
+              <div class="metric-icon total-icon">
+                <i class="fa-solid fa-wallet"></i>
+              </div>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value" id="metricTotalSpend">₹0</div>
+              <div class="metric-subtext" id="metricSpendSub">Across 0 transactions</div>
+            </div>
+          </div>
+
+          <!-- Card 2: You Are Owed (Emerald Green) -->
+          <div class="metric-card card-owed">
+            <div class="metric-header">
+              <span class="metric-title">You Are Owed</span>
+              <div class="metric-icon owed-icon">
+                <i class="fa-solid fa-arrow-down-left"></i>
+              </div>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value positive" id="metricYouAreOwed">+₹0</div>
+              <div class="metric-subtext">Others will pay you back</div>
+            </div>
+          </div>
+
+          <!-- Card 3: You Owe (Coral Red) -->
+          <div class="metric-card card-owing">
+            <div class="metric-header">
+              <span class="metric-title">You Owe</span>
+              <div class="metric-icon owing-icon">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </div>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value negative" id="metricYouOwe">-₹0</div>
+              <div class="metric-subtext">To settle with roommates</div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Main Dashboard Split Grid -->
+        <div class="dashboard-grid">
+
+          <!-- Left Column: Visual Analytics & Settlements -->
+          <div class="dashboard-left">
+
+            <!-- "Who Owes Whom" Settlement Summary Panel -->
+            <section class="card glass-card settlements-panel">
+              <div class="card-header">
+                <div class="header-info">
+                  <h2 class="card-title">
+                    <i class="fa-solid fa-scale-balanced header-icon"></i>
+                    Who Owes Whom
+                  </h2>
+                  <p class="card-subtitle">Smart simplified net debt settlements</p>
+                </div>
+                <button id="btnQuickSettle" class="btn btn-sm btn-ghost" title="Record a manual settlement">
+                  <i class="fa-solid fa-handshake"></i> Settle Up
+                </button>
+              </div>
+
+              <div class="card-content">
+                <div id="settlementsList" class="settlements-container">
+                  <!-- Dynamically populated settlements -->
+                </div>
+              </div>
+            </section>
+
+            <!-- Category Breakdown Chart (Chart.js) -->
+            <section class="card glass-card chart-panel">
+              <div class="card-header">
+                <div class="header-info">
+                  <h2 class="card-title">
+                    <i class="fa-solid fa-chart-pie header-icon"></i>
+                    Spending by Category
+                  </h2>
+                  <p class="card-subtitle">Campus budget distribution</p>
+                </div>
+                <span class="badge" id="chartTotalBadge">₹0 Total</span>
+              </div>
+
+              <div class="card-content chart-wrapper">
+                <div class="chart-canvas-container">
+                  <canvas id="categoryChart" width="280" height="280"></canvas>
+                  <div class="chart-center-label" id="chartCenterInfo">
+                    <span class="center-sub">Top Spent</span>
+                    <span class="center-main" id="chartTopCategory">Food</span>
+                  </div>
+                </div>
+                
+                <!-- Category Legend Breakdown -->
+                <div id="categoryBreakdownList" class="category-breakdown-list">
+                  <!-- Dynamically generated category breakdown pills -->
+                </div>
+              </div>
+
+              <!-- Campus Budget Meter -->
+              <div class="budget-meter-box">
+                <div class="budget-meter-header">
+                  <span><i class="fa-solid fa-piggy-bank"></i> Monthly Hostel Budget</span>
+                  <span id="budgetMeterRatio">₹0 / ₹10,000</span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div id="budgetMeterFill" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+              </div>
+            </section>
+
+          </div>
+
+          <!-- Right Column: Filterable Expense History Feed -->
+          <div class="dashboard-right">
+            
+            <section class="card glass-card feed-panel">
+              <!-- Feed Header with Search & Controls -->
+              <div class="card-header feed-header">
+                <div class="header-info">
+                  <h2 class="card-title">
+                    <i class="fa-solid fa-clock-rotate-left header-icon"></i>
+                    Expense History
+                  </h2>
+                  <p class="card-subtitle" id="feedCountSubtitle">Showing 6 expenses</p>
+                </div>
+                
+                <!-- Sort Dropdown -->
+                <div class="feed-sort-wrapper">
+                  <select id="expenseSortSelect" class="compact-select" aria-label="Sort expenses">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="highest">Highest Amount</option>
+                    <option value="lowest">Lowest Amount</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Search Bar & Category Filter Pills -->
+              <div class="feed-controls">
+                <div class="search-input-box">
+                  <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                  <input type="text" id="expenseSearchInput" placeholder="Search by title, paid by, or amount..." autocomplete="off">
+                  <button id="btnClearSearch" class="btn-clear-search hidden" title="Clear search">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <div class="category-filters-scroll" id="categoryFilterContainer">
+                  <button class="filter-pill active" data-category="all">
+                    <i class="fa-solid fa-layer-group"></i> All
+                  </button>
+                  <button class="filter-pill" data-category="Food & Dining">
+                    <i class="fa-solid fa-utensils"></i> Food & Dining
+                  </button>
+                  <button class="filter-pill" data-category="Rent & Utilities">
+                    <i class="fa-solid fa-bolt"></i> Rent & Utilities
+                  </button>
+                  <button class="filter-pill" data-category="Travel & Cabs">
+                    <i class="fa-solid fa-taxi"></i> Travel & Cabs
+                  </button>
+                  <button class="filter-pill" data-category="Books & Printouts">
+                    <i class="fa-solid fa-book-open"></i> Books & Printouts
+                  </button>
+                  <button class="filter-pill" data-category="Entertainment">
+                    <i class="fa-solid fa-film"></i> Entertainment
+                  </button>
+                </div>
+              </div>
+
+              <!-- Expenses Feed List -->
+              <div class="card-content feed-container">
+                <div id="expensesFeedList" class="expense-list">
+                  <!-- Dynamically populated expenses -->
+                </div>
+
+                <!-- Empty State Placeholder -->
+                <div id="emptyFeedState" class="empty-state hidden">
+                  <div class="empty-icon"><i class="fa-solid fa-receipt"></i></div>
+                  <h3 class="empty-title">No expenses found</h3>
+                  <p class="empty-desc">Try clearing filters or add your first group expense above!</p>
+                  <button id="btnEmptyAddExpense" class="btn btn-primary btn-sm">
+                    <i class="fa-solid fa-plus"></i> Add Expense Now
+                  </button>
+                </div>
+              </div>
+            </section>
+
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-container">
+        <span>SplitMate Campus &bull; Offline-Capable PWA for Students</span>
+        <span class="footer-note">Built with <i class="fa-solid fa-heart footer-heart"></i> for Campus Living</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 1: INTERACTIVE BILL-SPLITTING MODAL (+ Add Expense) -->
+  <!-- ======================================================== -->
+  <div id="addExpenseModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalExpenseTitle">
+    <div class="modal-dialog glass-modal">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon"><i class="fa-solid fa-receipt"></i></div>
+          <div>
+            <h3 id="modalExpenseTitle" class="modal-title">Add Group Expense</h3>
+            <p class="modal-subtitle">Record an expense & split it with roommates</p>
+          </div>
+        </div>
+        <button id="btnCloseExpenseModal" class="btn-close" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form -->
+      <form id="addExpenseForm" class="modal-form" novalidate>
+        
+        <!-- Expense Title & Amount -->
+        <div class="form-row form-row-2">
+          <div class="form-group flex-2">
+            <label for="expenseTitleInput" class="form-label">Expense Title *</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-tag input-icon"></i>
+              <input type="text" id="expenseTitleInput" placeholder="e.g. Late Night Pizza & Canteen" required>
+            </div>
+            <span class="field-error" id="titleError"></span>
+          </div>
+
+          <div class="form-group flex-1">
+            <label for="expenseAmountInput" class="form-label">Total Amount (₹) *</label>
+            <div class="input-with-icon">
+              <span class="currency-symbol">₹</span>
+              <input type="number" id="expenseAmountInput" placeholder="0" min="1" step="any" required>
+            </div>
+            <span class="field-error" id="amountError"></span>
+          </div>
+        </div>
+
+        <!-- Category & Paid By -->
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label for="expenseCategorySelect" class="form-label">Category *</label>
+            <div class="select-wrapper">
+              <select id="expenseCategorySelect" required>
+                <option value="Food & Dining">🍔 Food & Dining</option>
+                <option value="Rent & Utilities">⚡ Rent & Utilities</option>
+                <option value="Travel & Cabs">🚕 Travel & Cabs</option>
+                <option value="Books & Printouts">📚 Books & Printouts</option>
+                <option value="Entertainment">🎬 Entertainment</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="expensePayerSelect" class="form-label">Paid By *</label>
+            <div class="select-wrapper">
+              <select id="expensePayerSelect" required>
+                <!-- Dynamically populated from members list -->
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expense Date -->
+        <div class="form-group">
+          <label for="expenseDateInput" class="form-label">Expense Date</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-calendar-days input-icon"></i>
+            <input type="date" id="expenseDateInput">
+          </div>
+        </div>
+
+        <!-- Split Mode Selector Tabs -->
+        <div class="split-section">
+          <div class="split-header">
+            <label class="form-label">Split Method</label>
+            <span class="split-helper-text" id="splitModeDesc">Split equally across selected roommates</span>
+          </div>
+
+          <div class="split-tabs-nav" role="tablist">
+            <button type="button" class="split-tab active" data-mode="equal" role="tab" aria-selected="true">
+              <i class="fa-solid fa-divide"></i> Equal Split
+            </button>
+            <button type="button" class="split-tab" data-mode="exact" role="tab" aria-selected="false">
+              <i class="fa-solid fa-indian-rupee-sign"></i> Exact Amounts
+            </button>
+            <button type="button" class="split-tab" data-mode="percentage" role="tab" aria-selected="false">
+              <i class="fa-solid fa-percent"></i> Percentage Split
+            </button>
+          </div>
+
+          <!-- Split Mode Content Container -->
+          <div class="split-tab-content">
+            
+            <!-- Live Split Validation Bar (for Exact and Percentage) -->
+            <div id="splitValidationAlert" class="split-validation-alert hidden">
+              <div class="alert-info">
+                <i class="fa-solid fa-circle-exclamation alert-icon" id="validationAlertIcon"></i>
+                <span id="validationAlertText">Total must match expense amount</span>
+              </div>
+              <span class="alert-badge" id="validationAlertBadge">₹0.00 left</span>
+            </div>
+
+            <!-- Dynamic Member Rows for the Selected Split Mode -->
+            <div id="splitMembersContainer" class="split-members-list">
+              <!-- Dynamically populated by JS according to mode -->
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="modal-footer">
+          <button type="button" id="btnCancelExpense" class="btn btn-ghost">Cancel</button>
+          <button type="submit" id="btnSaveExpense" class="btn btn-primary">
+            <i class="fa-solid fa-check"></i> Save Expense
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 2: QUICK SETTLE UP MODAL                           -->
+  <!-- ======================================================== -->
+  <div id="settleModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalSettleTitle">
+    <div class="modal-dialog glass-modal max-w-sm">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon settle-icon"><i class="fa-solid fa-handshake"></i></div>
+          <div>
+            <h3 id="modalSettleTitle" class="modal-title">Record Settlement</h3>
+            <p class="modal-subtitle">Direct peer-to-peer balance clearance</p>
+          </div>
+        </div>
+        <button id="btnCloseSettleModal" class="btn-close" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="settleForm" class="modal-form">
+        <div class="form-group">
+          <label for="settlePayerSelect" class="form-label">Who is paying? (Debtor)</label>
+          <div class="select-wrapper">
+            <select id="settlePayerSelect" required></select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="settleReceiverSelect" class="form-label">Who receives the payment? (Creditor)</label>
+          <div class="select-wrapper">
+            <select id="settleReceiverSelect" required></select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="settleAmountInput" class="form-label">Settlement Amount (₹)</label>
+          <div class="input-with-icon">
+            <span class="currency-symbol">₹</span>
+            <input type="number" id="settleAmountInput" placeholder="0" min="1" step="any" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btnCancelSettle" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-check-double"></i> Confirm Settlement
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 3: CREATE NEW GROUP MODAL                          -->
+  <!-- ======================================================== -->
+  <div id="newGroupModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalNewGroupTitle">
+    <div class="modal-dialog glass-modal max-w-sm">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon"><i class="fa-solid fa-users"></i></div>
+          <div>
+            <h3 id="modalNewGroupTitle" class="modal-title">Create Campus Group</h3>
+            <p class="modal-subtitle">Start a new split ledger for trips or flatmates</p>
+          </div>
+        </div>
+        <button id="btnCloseNewGroupModal" class="btn-close" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="newGroupForm" class="modal-form">
+        <div class="form-group">
+          <label for="newGroupNameInput" class="form-label">Group Name *</label>
+          <input type="text" id="newGroupNameInput" placeholder="e.g. Goa Trip 2026, Flat 301" required>
+        </div>
+
+        <div class="form-group">
+          <label for="newGroupDescInput" class="form-label">Description / Purpose</label>
+          <input type="text" id="newGroupDescInput" placeholder="e.g. Travel tickets, food & stay">
+        </div>
+
+        <div class="form-group">
+          <label for="newGroupMembersInput" class="form-label">Members (Comma-separated) *</label>
+          <input type="text" id="newGroupMembersInput" placeholder="You, Aarav, Rohan, Kabir" value="You, " required>
+          <span class="field-hint">Always keep 'You' included to track your personal ledger.</span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btnCancelNewGroup" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Group</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- App JavaScript Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
